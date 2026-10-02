@@ -1,0 +1,56 @@
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+// Erro customizado pra quem chama poder checar o status sem parsear mensagem.
+export class ApiError extends Error {
+  constructor(status, mensagem) {
+    super(mensagem);
+    this.status = status;
+  }
+}
+
+function pegarToken() {
+  return localStorage.getItem("token");
+}
+
+// Monta a requisição, injeta o token e já devolve o JSON (ou lança ApiError).
+// `body` pode ser um objeto comum (vira JSON) ou um FormData (ex: upload de foto).
+async function requisitar(caminho, { method = "GET", body, semToken = false } = {}) {
+  const headers = {};
+  const options = { method, headers };
+
+  if (body instanceof FormData) {
+    options.body = body;
+  } else if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(body);
+  }
+
+  if (!semToken) {
+    const token = pegarToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const resposta = await fetch(`${BASE_URL}${caminho}`, options);
+
+  if (resposta.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login";
+    throw new ApiError(401, "Sessão expirada");
+  }
+
+  const dados = await resposta.json().catch(() => null);
+
+  if (!resposta.ok) {
+    throw new ApiError(resposta.status, dados?.detail ?? "Erro na requisição");
+  }
+
+  return dados;
+}
+
+export const api = {
+  get: (caminho) => requisitar(caminho),
+  post: (caminho, body, opcoes) => requisitar(caminho, { method: "POST", body, ...opcoes }),
+  put: (caminho, body) => requisitar(caminho, { method: "PUT", body }),
+  patch: (caminho, body) => requisitar(caminho, { method: "PATCH", body }),
+};
