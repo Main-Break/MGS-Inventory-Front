@@ -196,6 +196,25 @@ button.stat-card:hover { box-shadow: var(--bs-box-shadow-sm); }
 
 .numero { font-variant-numeric: tabular-nums; }
 
+/* ---------- Barra de ações fixa (telas de formulário longo) ---------- */
+
+.barra-acoes {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 1.5rem -1rem -3rem;
+  padding: .85rem 1rem;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color-translucent);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, .04);
+}
+@media (min-width: 768px) {
+  .barra-acoes { margin: 1.5rem -2rem -3rem; padding: .85rem 2rem; }
+}
+
 /* ---------- Busca com ícone ---------- */
 
 .campo-busca { position: relative; }

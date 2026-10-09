@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Badge, Button, Card, Col, FloatingLabel, Form, Modal, Row, Table } from "react-bootstrap";
-import { api, ApiError } from "../../services/api";
+import { Alert, Badge, Button, Card, Form, Table } from "react-bootstrap";
+import { Link } from "react-router-dom";
+import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificacao } from "../../context/NotificacaoContext";
 import { inicial, nomePapel } from "../../utils/formatacao";
-import { PERMISSOES, PERMISSOES_DO_PAPEL } from "../../utils/permissoes";
-import { BotaoSalvar, CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
-
-// extra_permissions: o que foi liberado além do que o papel já dá.
-const USUARIO_VAZIO = { name: "", email: "", password: "", role: "funcionario", extra_permissions: [] };
+import { PERMISSOES } from "../../utils/permissoes";
+import { CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
 
 export function Usuarios() {
   const { usuario: eu } = useAuth();
@@ -18,74 +16,17 @@ export function Usuarios() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
-  // Modal de cadastro/edição: editandoId null = usuário novo.
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
-  const [form, setForm] = useState(USUARIO_VAZIO);
-  const [erroForm, setErroForm] = useState(null);
-  const [salvando, setSalvando] = useState(false);
-
   // Usuário que está pra ser desativado (abre o modal de confirmação).
   const [paraDesativar, setParaDesativar] = useState(null);
   const [alterandoAcesso, setAlterandoAcesso] = useState(false);
 
-  function carregarUsuarios() {
-    setCarregando(true);
-    setErro(null);
+  useEffect(() => {
     api
       .get("/users")
       .then(setUsuarios)
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  }
-
-  useEffect(carregarUsuarios, []);
-
-  function abrirNovo() {
-    setEditandoId(null);
-    setForm(USUARIO_VAZIO);
-    setErroForm(null);
-    setModalAberto(true);
-  }
-
-  function abrirEdicao(usuario) {
-    setEditandoId(usuario.id);
-    setForm({
-      name: usuario.name,
-      email: usuario.email,
-      password: "",
-      role: usuario.role,
-      extra_permissions: usuario.extra_permissions ?? [],
-    });
-    setErroForm(null);
-    setModalAberto(true);
-  }
-
-  async function salvar(evento) {
-    evento.preventDefault();
-    setErroForm(null);
-    setSalvando(true);
-    // Extra que o papel já cobre não precisa ir (ex: virou gestor).
-    const doPapel = PERMISSOES_DO_PAPEL[form.role] ?? [];
-    const corpo = { ...form, extra_permissions: form.extra_permissions.filter((p) => !doPapel.includes(p)) };
-    try {
-      if (editandoId) {
-        // Rota a implementar na API: PUT /users/{id}. Senha vazia = não muda.
-        const atualizado = await api.put(`/users/${editandoId}`, { ...corpo, password: corpo.password || null });
-        setUsuarios((lista) => lista.map((u) => (u.id === atualizado.id ? atualizado : u)));
-        notificar(`Dados de ${form.name} atualizados.`);
-      } else {
-        await api.post("/users", corpo);
-        notificar(`${form.name} cadastrado como ${nomePapel(form.role).toLowerCase()}.`);
-        carregarUsuarios();
-      }
-      setModalAberto(false);
-    } catch (e) {
-      setErroForm(e instanceof ApiError ? e.message : "Não foi possível salvar o usuário.");
-    } finally {
-      setSalvando(false);
-    }
-  }
+  }, []);
 
   async function mudarAcesso(usuario, ativo) {
     setAlterandoAcesso(true);
@@ -101,17 +42,6 @@ export function Usuarios() {
     }
   }
 
-  const alterarCampo = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
-
-  function alternarPermissao(chave) {
-    const extras = form.extra_permissions.includes(chave)
-      ? form.extra_permissions.filter((p) => p !== chave)
-      : [...form.extra_permissions, chave];
-    setForm({ ...form, extra_permissions: extras });
-  }
-
-  const permissoesDoPapelNoForm = PERMISSOES_DO_PAPEL[form.role] ?? [];
-
   const termo = busca.trim().toLowerCase();
   const listaFiltrada = usuarios.filter(
     (u) => !termo || `${u.name} ${u.email}`.toLowerCase().includes(termo),
@@ -120,7 +50,7 @@ export function Usuarios() {
   return (
     <>
       <CabecalhoPagina titulo="Usuários" subtitulo="Quem pode entrar no sistema e o que cada um pode fazer.">
-        <Button onClick={abrirNovo}>
+        <Button as={Link} to="/usuarios/novo">
           <i className="bi bi-person-plus me-2" />
           Novo usuário
         </Button>
@@ -167,7 +97,7 @@ export function Usuarios() {
               {listaFiltrada.map((u) => (
                 <tr key={u.id} className={u.active ? "" : "opacity-75"}>
                   <td className="ps-3">
-                    <div className="d-flex align-items-center gap-2">
+                    <Link to={`/usuarios/${u.id}`} className="d-flex align-items-center gap-2 text-decoration-none text-body">
                       <span className="avatar avatar-sm bg-primary-subtle text-primary-emphasis">{inicial(u.name)}</span>
                       <div className="overflow-hidden">
                         <div className="fw-medium text-truncate">
@@ -176,7 +106,7 @@ export function Usuarios() {
                         </div>
                         <div className="text-secondary small text-truncate">{u.email}</div>
                       </div>
-                    </div>
+                    </Link>
                   </td>
                   <td>
                     <Badge
@@ -203,7 +133,7 @@ export function Usuarios() {
                     <Badge bg={u.active ? "success" : "secondary"}>{u.active ? "Ativo" : "Inativo"}</Badge>
                   </td>
                   <td className="text-end pe-3 text-nowrap">
-                    <Button size="sm" variant="outline-primary" className="me-1" onClick={() => abrirEdicao(u)} title="Editar usuário">
+                    <Button as={Link} to={`/usuarios/${u.id}`} size="sm" variant="outline-primary" className="me-1" title="Editar usuário">
                       <i className="bi bi-pencil" /> <span className="d-none d-md-inline">Editar</span>
                     </Button>
                     {u.active ? (
@@ -245,112 +175,6 @@ export function Usuarios() {
           As verificações que essa pessoa já enviou continuam guardadas. Dá pra reativar o acesso a qualquer momento.
         </p>
       </ModalConfirmacao>
-
-      <Modal show={modalAberto} onHide={() => setModalAberto(false)} centered>
-        <Form onSubmit={salvar}>
-          <Modal.Header closeButton>
-            <Modal.Title as="h5">
-              <i className={`bi ${editandoId ? "bi-person-gear" : "bi-person-plus"} me-2 text-info`} />
-              {editandoId ? "Editar usuário" : "Novo usuário"}
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {erroForm && <Alert variant="danger">{erroForm}</Alert>}
-
-            <FloatingLabel controlId="usuario-nome" label="Nome completo" className="mb-3">
-              <Form.Control placeholder="Nome" value={form.name} onChange={alterarCampo("name")} autoFocus required />
-            </FloatingLabel>
-
-            <FloatingLabel controlId="usuario-email" label="E-mail" className="mb-3">
-              <Form.Control
-                type="email"
-                placeholder="nome@empresa.com"
-                autoComplete="off"
-                value={form.email}
-                onChange={alterarCampo("email")}
-                required
-              />
-            </FloatingLabel>
-
-            <Row className="g-3">
-              <Col sm={7}>
-                <FloatingLabel controlId="usuario-senha" label={editandoId ? "Nova senha" : "Senha inicial"}>
-                  <Form.Control
-                    type="password"
-                    placeholder="Senha"
-                    autoComplete="new-password"
-                    minLength={8}
-                    value={form.password}
-                    onChange={alterarCampo("password")}
-                    required={!editandoId}
-                  />
-                </FloatingLabel>
-                <Form.Text>
-                  {editandoId ? "Deixe em branco para manter a atual." : "Mínimo de 8 caracteres."}
-                </Form.Text>
-              </Col>
-              <Col sm={5}>
-                {/* Tirar o próprio papel de gestor deixaria a conta sem acesso a esta tela. */}
-                <FloatingLabel controlId="usuario-papel" label="Papel">
-                  <Form.Select
-                    value={form.role}
-                    onChange={alterarCampo("role")}
-                    disabled={editandoId === eu.id}
-                    title={editandoId === eu.id ? "Você não pode mudar o próprio papel" : undefined}
-                  >
-                    <option value="funcionario">Funcionário</option>
-                    <option value="gestor">Gestor</option>
-                  </Form.Select>
-                </FloatingLabel>
-              </Col>
-            </Row>
-
-            <h6 className="secao-titulo mt-4 mb-2">Permissões</h6>
-            <p className="text-secondary small mb-2">
-              O papel já libera as permissões marcadas como <em>do papel</em>. As outras podem ser liberadas só para este usuário.
-            </p>
-            <div className="border rounded-3">
-              {Object.entries(PERMISSOES).map(([chave, p], indice) => {
-                const doPapel = permissoesDoPapelNoForm.includes(chave);
-                const proprio = editandoId === eu.id;
-                return (
-                  <div key={chave} className={`d-flex align-items-start gap-3 px-3 py-2 ${indice > 0 ? "border-top" : ""}`}>
-                    <Form.Check
-                      type="switch"
-                      id={`permissao-${chave}`}
-                      className="mt-1"
-                      checked={doPapel || form.extra_permissions.includes(chave)}
-                      disabled={doPapel || proprio}
-                      onChange={() => alternarPermissao(chave)}
-                      aria-label={p.rotulo}
-                    />
-                    <label htmlFor={`permissao-${chave}`} className="flex-grow-1">
-                      <span className="fw-medium d-block">
-                        {p.rotulo}
-                        {doPapel && (
-                          <Badge pill bg="secondary-subtle" text="secondary-emphasis" className="fw-medium ms-2">
-                            do papel
-                          </Badge>
-                        )}
-                      </span>
-                      <span className="text-secondary small">{p.descricao}</span>
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-            {editandoId === eu.id && (
-              <Form.Text className="d-block mt-2">Você não pode mudar as próprias permissões.</Form.Text>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="outline-secondary" onClick={() => setModalAberto(false)} disabled={salvando}>
-              Cancelar
-            </Button>
-            <BotaoSalvar salvando={salvando}>{editandoId ? "Salvar alterações" : "Cadastrar usuário"}</BotaoSalvar>
-          </Modal.Footer>
-        </Form>
-      </Modal>
     </>
   );
 }

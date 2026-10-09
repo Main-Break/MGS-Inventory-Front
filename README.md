@@ -45,7 +45,8 @@ pela tela de Usuários.
 | `/perfil` | (logado) | edita os próprios dados e senha |
 | `/verificacoes` | `aprovar_verificacoes` | vê e aprova/rejeita as contagens de todos |
 | `/itens` | `itens` | cadastra, edita, exclui e busca itens do catálogo |
-| `/usuarios` | `usuarios` | cadastra, edita, ativa/desativa e libera permissões |
+| `/usuarios` | `usuarios` | lista, busca e ativa/desativa usuários |
+| `/usuarios/novo`, `/usuarios/:id` | `usuarios` | cadastro/edição em tela própria: dados, papel e permissões |
 | `/enviar-foto` | `enviar_foto` | tira ou escolhe uma foto, manda pra API contar |
 | `/minhas-verificacoes` | `enviar_foto` | histórico de envios do próprio usuário |
 
@@ -55,8 +56,11 @@ pela tela de Usuários.
 
 Mesmo modelo do OS-Mechanical: o papel traz um conjunto fixo de
 permissões, e o gestor pode liberar permissões extras pra um usuário
-específico (tela de Usuários > Editar > Permissões). Catálogo e padrão
-de cada papel ficam em `src/utils/permissoes.js`:
+específico (tela do usuário > Permissões). Catálogo e padrão de cada
+papel ficam em `src/utils/permissoes.js`, com as permissões agrupadas por
+módulo. Permissão nova (ex: imprimir etiquetas, emitir nota) é só somar
+no grupo do módulo dela: a tela de edição já monta busca, contador e
+"liberar todas" por grupo a partir dali.
 
 | Permissão | Gestor | Funcionário |
 |---|---|---|
