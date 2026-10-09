@@ -8,6 +8,7 @@ import { Perfil } from "./pages/Perfil";
 import { Usuarios } from "./pages/gestor/Usuarios";
 import { FormularioUsuario } from "./pages/gestor/FormularioUsuario";
 import { Itens } from "./pages/gestor/Itens";
+import { FormularioItem } from "./pages/gestor/FormularioItem";
 import { Verificacoes } from "./pages/gestor/Verificacoes";
 import { EnviarFoto } from "./pages/funcionario/EnviarFoto";
 import { MinhasVerificacoes } from "./pages/funcionario/MinhasVerificacoes";
@@ -43,6 +44,8 @@ function App() {
 
               <Route path="/verificacoes" element={<RotaProtegida permissao="aprovar_verificacoes"><Verificacoes /></RotaProtegida>} />
               <Route path="/itens" element={<RotaProtegida permissao="itens"><Itens /></RotaProtegida>} />
+              <Route path="/itens/novo" element={<RotaProtegida permissao="itens"><FormularioItem /></RotaProtegida>} />
+              <Route path="/itens/:id" element={<RotaProtegida permissao="itens"><FormularioItem /></RotaProtegida>} />
               <Route path="/usuarios" element={<RotaProtegida permissao="usuarios"><Usuarios /></RotaProtegida>} />
               <Route path="/usuarios/novo" element={<RotaProtegida permissao="usuarios"><FormularioUsuario /></RotaProtegida>} />
               <Route path="/usuarios/:id" element={<RotaProtegida permissao="usuarios"><FormularioUsuario /></RotaProtegida>} />

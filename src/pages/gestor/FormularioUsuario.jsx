@@ -103,7 +103,7 @@ export function FormularioUsuario() {
   }
 
   return (
-    <Form onSubmit={salvar}>
+    <Form onSubmit={salvar} className="pagina-formulario">
       <Link to="/usuarios" className="text-decoration-none small d-inline-flex align-items-center gap-1 mb-2">
         <i className="bi bi-arrow-left" /> Usuários
       </Link>

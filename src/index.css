@@ -215,6 +215,16 @@ button.stat-card:hover { box-shadow: var(--bs-box-shadow-sm); }
   .barra-acoes { margin: 1.5rem -2rem -3rem; padding: .85rem 2rem; }
 }
 
+/* Página de formulário ocupa a altura toda, pra barra ficar no rodapé da
+   janela mesmo quando o formulário é curto. */
+.pagina-formulario {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--topbar-altura) - 2rem);
+}
+.pagina-formulario > .barra-acoes { margin-top: auto; }
+.pagina-formulario > .row { margin-bottom: 1.5rem; }
+
 /* ---------- Busca com ícone ---------- */
 
 .campo-busca { position: relative; }

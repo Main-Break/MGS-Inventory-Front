@@ -44,7 +44,12 @@ pela tela de Usuários.
 | `/login` | - | entrada, e-mail + senha |
 | `/perfil` | (logado) | edita os próprios dados e senha |
 | `/verificacoes` | `aprovar_verificacoes` | vê e aprova/rejeita as contagens de todos |
-| `/itens` | `itens` | cadastra, edita, exclui e busca itens do catálogo |
+| `/itens` | `itens` | lista, busca e exclui itens do catálogo |
+| `/itens/novo`, `/itens/:id` | `itens` | cadastro/edição do item em tela própria |
+
+Cadastro e edição sempre em tela própria (rota dedicada), nunca em modal:
+modal fica só pra confirmação ("tem certeza?") e casos raros com pouquíssima
+informação.
 | `/usuarios` | `usuarios` | lista, busca e ativa/desativa usuários |
 | `/usuarios/novo`, `/usuarios/:id` | `usuarios` | cadastro/edição em tela própria: dados, papel e permissões |
 | `/enviar-foto` | `enviar_foto` | tira ou escolhe uma foto, manda pra API contar |

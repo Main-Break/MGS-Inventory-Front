@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, FloatingLabel, Form, Modal, Table } from "react-bootstrap";
-import { api, ApiError } from "../../services/api";
+import { Alert, Button, Card, Form, Table } from "react-bootstrap";
+import { Link } from "react-router-dom";
+import { api } from "../../services/api";
 import { useNotificacao } from "../../context/NotificacaoContext";
-import { BotaoSalvar, CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
-
-const ITEM_VAZIO = { label: "", name: "", stock_quantity: 0 };
+import { CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
 
 export function Itens() {
   const notificar = useNotificacao();
@@ -12,13 +11,6 @@ export function Itens() {
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
-
-  // Modal de cadastro/edição: editandoId null = item novo.
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
-  const [form, setForm] = useState(ITEM_VAZIO);
-  const [erroForm, setErroForm] = useState(null);
-  const [salvando, setSalvando] = useState(false);
 
   const [paraExcluir, setParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -41,43 +33,6 @@ export function Itens() {
     return () => clearTimeout(espera);
   }, [busca]);
 
-  function abrirNovo() {
-    setEditandoId(null);
-    setForm(ITEM_VAZIO);
-    setErroForm(null);
-    setModalAberto(true);
-  }
-
-  function abrirEdicao(item) {
-    setEditandoId(item.id);
-    setForm({ label: item.label, name: item.name, stock_quantity: item.stock_quantity });
-    setErroForm(null);
-    setModalAberto(true);
-  }
-
-  async function salvar(evento) {
-    evento.preventDefault();
-    setErroForm(null);
-    setSalvando(true);
-    const corpo = { ...form, stock_quantity: Number(form.stock_quantity) };
-    try {
-      if (editandoId) {
-        // Rota a implementar na API: PUT /items/{id}
-        await api.put(`/items/${editandoId}`, corpo);
-        notificar(`Item "${form.name}" atualizado.`);
-      } else {
-        await api.post("/items", corpo);
-        notificar(`Item "${form.name}" cadastrado.`);
-      }
-      setModalAberto(false);
-      carregarItens(busca.trim());
-    } catch (e) {
-      setErroForm(e instanceof ApiError ? e.message : "Não foi possível salvar o item.");
-    } finally {
-      setSalvando(false);
-    }
-  }
-
   async function excluir() {
     setExcluindo(true);
     try {
@@ -93,15 +48,13 @@ export function Itens() {
     }
   }
 
-  const alterarCampo = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
-
   return (
     <>
       <CabecalhoPagina
         titulo="Itens do catálogo"
         subtitulo="Peças que a IA sabe reconhecer nas fotos e o estoque atual de cada uma."
       >
-        <Button onClick={abrirNovo}>
+        <Button as={Link} to="/itens/novo">
           <i className="bi bi-plus-lg me-2" />
           Novo item
         </Button>
@@ -135,7 +88,7 @@ export function Itens() {
             {busca ? (
               "Confira a busca ou cadastre um item novo."
             ) : (
-              <Button size="sm" variant="outline-primary" className="mt-2" onClick={abrirNovo}>
+              <Button as={Link} to="/itens/novo" size="sm" variant="outline-primary" className="mt-2">
                 <i className="bi bi-plus-lg me-1" /> Cadastrar o primeiro item
               </Button>
             )}
@@ -153,11 +106,13 @@ export function Itens() {
             <tbody>
               {itens.map((item) => (
                 <tr key={item.id}>
-                  <td className="ps-3 fw-medium">{item.name}</td>
+                  <td className="ps-3 fw-medium">
+                    <Link to={`/itens/${item.id}`} className="text-body text-decoration-none">{item.name}</Link>
+                  </td>
                   <td><code className="small">{item.label}</code></td>
                   <td className="text-end fw-semibold numero">{item.stock_quantity.toLocaleString("pt-BR")}</td>
                   <td className="text-end pe-3 text-nowrap">
-                    <Button size="sm" variant="outline-primary" className="me-1" onClick={() => abrirEdicao(item)} title="Editar item">
+                    <Button as={Link} to={`/itens/${item.id}`} size="sm" variant="outline-primary" className="me-1" title="Editar item">
                       <i className="bi bi-pencil" /> <span className="d-none d-md-inline">Editar</span>
                     </Button>
                     <Button size="sm" variant="outline-danger" onClick={() => setParaExcluir(item)} title="Excluir item">
@@ -187,58 +142,6 @@ export function Itens() {
           A IA continua reconhecendo a peça, mas as próximas contagens não vão mais ficar ligadas a esse item.
         </p>
       </ModalConfirmacao>
-
-      <Modal show={modalAberto} onHide={() => setModalAberto(false)} centered>
-        <Form onSubmit={salvar}>
-          <Modal.Header closeButton>
-            <Modal.Title as="h5">
-              <i className={`bi ${editandoId ? "bi-pencil-square" : "bi-box-seam"} me-2 text-warning`} />
-              {editandoId ? "Editar item" : "Novo item"}
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {erroForm && <Alert variant="danger">{erroForm}</Alert>}
-
-            <FloatingLabel controlId="item-nome" label="Nome" className="mb-3">
-              <Form.Control placeholder="Parafuso 10mm" value={form.name} onChange={alterarCampo("name")} autoFocus required />
-            </FloatingLabel>
-
-            <FloatingLabel controlId="item-label" label="Label (classe da IA)">
-              <Form.Control
-                placeholder="parafuso_10mm"
-                value={form.label}
-                onChange={alterarCampo("label")}
-                className="font-monospace"
-                required
-              />
-            </FloatingLabel>
-            <Form.Text className="d-flex gap-2 mt-2 mb-3">
-              <i className="bi bi-info-circle" />
-              <span>
-                Tem que ser exatamente igual ao nome que a IA usa pra essa peça, letra por letra.
-                Se for diferente, a IA não consegue contar esse item.
-              </span>
-            </Form.Text>
-
-            <FloatingLabel controlId="item-estoque" label={editandoId ? "Estoque atual" : "Estoque inicial"}>
-              <Form.Control
-                type="number"
-                min={0}
-                placeholder="0"
-                value={form.stock_quantity}
-                onChange={alterarCampo("stock_quantity")}
-                required
-              />
-            </FloatingLabel>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="outline-secondary" onClick={() => setModalAberto(false)} disabled={salvando}>
-              Cancelar
-            </Button>
-            <BotaoSalvar salvando={salvando}>{editandoId ? "Salvar alterações" : "Cadastrar item"}</BotaoSalvar>
-          </Modal.Footer>
-        </Form>
-      </Modal>
     </>
   );
 }
