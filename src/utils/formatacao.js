@@ -6,8 +6,16 @@ export function formatarData(dataIso) {
   });
 }
 
-// Transforma a lista de detecções da IA num texto curto, ex: "parafuso x12, porca x5".
-export function resumoDeteccoes(detections) {
-  if (!detections || detections.length === 0) return "Nenhum item detectado";
-  return detections.map((d) => `${d.label} x${d.count}`).join(", ");
+// Soma das peças contadas pela IA numa verificação.
+export function totalDetectado(detections) {
+  return (detections ?? []).reduce((soma, d) => soma + d.count, 0);
+}
+
+// Inicial do nome pro avatar (ex: "Maria Souza" -> "M").
+export function inicial(nome) {
+  return (nome ?? "").trim().charAt(0).toUpperCase() || "?";
+}
+
+export function nomePapel(role) {
+  return role === "gestor" ? "Gestor" : "Funcionário";
 }

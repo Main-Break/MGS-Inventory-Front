@@ -1,7 +1,8 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NotificacaoProvider } from "./context/NotificacaoContext";
 import { RotaProtegida } from "./components/RotaProtegida";
-import { Navbar } from "./components/Navbar";
+import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Perfil } from "./pages/Perfil";
 import { Usuarios } from "./pages/gestor/Usuarios";
@@ -23,19 +24,24 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Navbar />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Inicio />} />
-          <Route path="/perfil" element={<RotaProtegida><Perfil /></RotaProtegida>} />
+        <NotificacaoProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Inicio />} />
 
-          <Route path="/gestor/usuarios" element={<RotaProtegida papel="gestor"><Usuarios /></RotaProtegida>} />
-          <Route path="/gestor/itens" element={<RotaProtegida papel="gestor"><Itens /></RotaProtegida>} />
-          <Route path="/gestor/verificacoes" element={<RotaProtegida papel="gestor"><Verificacoes /></RotaProtegida>} />
+            {/* Telas logadas: topo + menu lateral em volta. */}
+            <Route element={<RotaProtegida><Layout /></RotaProtegida>}>
+              <Route path="/perfil" element={<Perfil />} />
 
-          <Route path="/funcionario/enviar-foto" element={<RotaProtegida papel="funcionario"><EnviarFoto /></RotaProtegida>} />
-          <Route path="/funcionario/minhas-verificacoes" element={<RotaProtegida papel="funcionario"><MinhasVerificacoes /></RotaProtegida>} />
-        </Routes>
+              <Route path="/gestor/usuarios" element={<RotaProtegida papel="gestor"><Usuarios /></RotaProtegida>} />
+              <Route path="/gestor/itens" element={<RotaProtegida papel="gestor"><Itens /></RotaProtegida>} />
+              <Route path="/gestor/verificacoes" element={<RotaProtegida papel="gestor"><Verificacoes /></RotaProtegida>} />
+
+              <Route path="/funcionario/enviar-foto" element={<RotaProtegida papel="funcionario"><EnviarFoto /></RotaProtegida>} />
+              <Route path="/funcionario/minhas-verificacoes" element={<RotaProtegida papel="funcionario"><MinhasVerificacoes /></RotaProtegida>} />
+            </Route>
+          </Routes>
+        </NotificacaoProvider>
       </AuthProvider>
     </BrowserRouter>
   );

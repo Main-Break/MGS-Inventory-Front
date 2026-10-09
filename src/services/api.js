@@ -30,9 +30,17 @@ async function requisitar(caminho, { method = "GET", body, semToken = false } = 
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const resposta = await fetch(`${BASE_URL}${caminho}`, options);
+  let resposta;
+  try {
+    resposta = await fetch(`${BASE_URL}${caminho}`, options);
+  } catch {
+    // fetch só lança em falha de rede ("Failed to fetch"): troca por algo
+    // que o usuário entenda.
+    throw new ApiError(0, "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.");
+  }
 
-  if (resposta.status === 401) {
+  // Sem token (ex: login), 401 é só e-mail/senha errados: não é sessão expirada.
+  if (resposta.status === 401 && !semToken) {
     localStorage.removeItem("token");
     localStorage.removeItem("usuario");
     window.location.href = "/login";

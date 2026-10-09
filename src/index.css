@@ -1,3 +1,315 @@
+/* Padrão visual herdado do Simple ERP / OS-Mechanical: Bootstrap puro e
+   theme-aware. Só variáveis do Bootstrap aqui (nada de cor fixa), fora as
+   cores da marca MGS, que são as mesmas nos dois temas. */
+
+:root {
+  --mgs-marinho: #263445;
+  --mgs-marinho-escuro: #1a2431;
+  --mgs-laranja: #f5a400;
+  --sidebar-largura: 264px;
+  --topbar-altura: 60px;
+}
+
 body {
   margin: 0;
+  background: var(--bs-tertiary-bg);
 }
+
+/* ---------- Marca ---------- */
+
+/* Logo tem texto escuro: no tema escuro ganha um fundo claro pra não sumir. */
+.logo-marca {
+  display: inline-block;
+  border-radius: .5rem;
+}
+[data-bs-theme="dark"] .logo-marca {
+  background: #fff;
+  padding: .3rem .5rem;
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  height: var(--topbar-altura);
+  background: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+/* ---------- Menu lateral ---------- */
+
+.sidebar {
+  --bs-offcanvas-width: var(--sidebar-largura);
+  background: var(--bs-body-bg);
+}
+@media (min-width: 992px) {
+  .sidebar {
+    width: var(--sidebar-largura);
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--topbar-altura);
+    height: calc(100vh - var(--topbar-altura));
+    border-right: 1px solid var(--bs-border-color-translucent);
+  }
+}
+
+.nav-user-card {
+  background: var(--bs-tertiary-bg);
+  border-radius: .75rem;
+  transition: background .15s;
+}
+.nav-user-card:hover { background: var(--bs-secondary-bg); }
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.avatar-sm { width: 32px; height: 32px; font-size: .85rem; }
+.avatar-lg { width: 72px; height: 72px; font-size: 1.75rem; }
+
+.nav-section-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  padding: 14px 10px 6px;
+}
+
+.nav-item-link {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  padding: .45rem .6rem;
+  border-radius: .6rem;
+  color: var(--bs-body-color);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-size: .95rem;
+  transition: background .15s;
+}
+.nav-item-link:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+.nav-item-link.active {
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+  font-weight: 600;
+}
+
+.nav-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: .55rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* ---------- Conteúdo ---------- */
+
+.conteudo {
+  flex-grow: 1;
+  min-width: 0;
+  padding: 1.75rem 1rem 3rem;
+}
+@media (min-width: 768px) {
+  .conteudo { padding: 2rem 2rem 3rem; }
+}
+
+.secao-titulo {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin-bottom: 1rem;
+}
+
+/* ---------- Cards de indicador (stat-card do Dashboard do Simple ERP) ---------- */
+
+.stat-card {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 10px;
+  padding: 16px 18px;
+  text-align: left;
+  width: 100%;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+button.stat-card:hover { box-shadow: var(--bs-box-shadow-sm); }
+.stat-card.ativo { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary); }
+
+.stat-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.stat-card__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+}
+.stat-card__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-card__value {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--bs-emphasis-color);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* ---------- Tabelas ---------- */
+
+.tabela-lista { margin: 0; }
+.tabela-lista thead th {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border-bottom-width: 1px;
+  white-space: nowrap;
+  padding-top: .65rem;
+  padding-bottom: .65rem;
+}
+.tabela-lista td { vertical-align: middle; }
+.tabela-lista tbody tr:last-child td { border-bottom: 0; }
+
+.numero { font-variant-numeric: tabular-nums; }
+
+/* ---------- Busca com ícone ---------- */
+
+.campo-busca { position: relative; }
+.campo-busca i {
+  position: absolute;
+  left: .8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color);
+  pointer-events: none;
+}
+.campo-busca .form-control { padding-left: 2.25rem; }
+
+/* ---------- Estado vazio ---------- */
+
+.estado-vazio {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--bs-secondary-color);
+}
+.estado-vazio > i {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: .75rem;
+  opacity: .6;
+}
+
+/* ---------- Envio de foto ---------- */
+
+.area-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 200px;
+  border: 2px dashed var(--bs-border-color);
+  border-radius: .75rem;
+  background: var(--bs-tertiary-bg);
+  cursor: pointer;
+  text-align: center;
+  padding: 1.5rem;
+  transition: border-color .15s, background .15s;
+}
+.area-foto:hover { border-color: var(--bs-primary); background: var(--bs-primary-bg-subtle); }
+.area-foto.desabilitada { pointer-events: none; opacity: .6; }
+.area-foto > i { font-size: 2.5rem; color: var(--bs-primary); }
+
+.preview-foto {
+  position: relative;
+  border-radius: .75rem;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg);
+}
+.preview-foto img { display: block; width: 100%; max-height: 360px; object-fit: contain; }
+.preview-foto__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+}
+
+/* ---------- Login ---------- */
+
+.login-pagina {
+  min-height: 100vh;
+  display: flex;
+  background: var(--bs-body-bg);
+}
+.login-marca {
+  flex: 1 1 50%;
+  background: linear-gradient(155deg, var(--mgs-marinho) 0%, var(--mgs-marinho-escuro) 100%);
+  color: #fff;
+  padding: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+/* Formas geométricas da logo, bem discretas no fundo. */
+.login-marca::before,
+.login-marca::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 164, 0, .18);
+}
+.login-marca::before { width: 420px; height: 420px; right: -140px; bottom: -140px; }
+.login-marca::after { width: 220px; height: 220px; right: 60px; bottom: 60px; background: rgba(245, 164, 0, .06); }
+
+.login-marca__logo {
+  background: #fff;
+  border-radius: .75rem;
+  padding: .6rem .9rem;
+  display: inline-block;
+}
+.login-marca__destaque { color: var(--mgs-laranja); }
+.login-marca__lista li {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, .85);
+}
+.login-marca__lista i { color: var(--mgs-laranja); font-size: 1.15rem; line-height: 1.4; }
+
+.login-form {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.login-form__caixa { width: 100%; max-width: 380px; }
