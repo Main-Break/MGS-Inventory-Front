@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { RotaProtegida } from "./components/RotaProtegida";
 import { Navbar } from "./components/Navbar";
 import { Login } from "./pages/Login";
+import { Perfil } from "./pages/Perfil";
 import { Usuarios } from "./pages/gestor/Usuarios";
 import { Itens } from "./pages/gestor/Itens";
 import { Verificacoes } from "./pages/gestor/Verificacoes";
@@ -26,6 +27,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Inicio />} />
+          <Route path="/perfil" element={<RotaProtegida><Perfil /></RotaProtegida>} />
 
           <Route path="/gestor/usuarios" element={<RotaProtegida papel="gestor"><Usuarios /></RotaProtegida>} />
           <Route path="/gestor/itens" element={<RotaProtegida papel="gestor"><Itens /></RotaProtegida>} />

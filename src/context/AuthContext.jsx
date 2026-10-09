@@ -45,8 +45,15 @@ export function AuthProvider({ children }) {
     setUsuario(null);
   }
 
+  // Usado depois de editar o perfil (PUT /users/me): atualiza o nome exibido
+  // na Navbar sem precisar recarregar a página.
+  function atualizarUsuario(dados) {
+    localStorage.setItem("usuario", JSON.stringify(dados));
+    setUsuario(dados);
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, carregando, login, logout }}>
+    <AuthContext.Provider value={{ usuario, carregando, login, logout, atualizarUsuario }}>
       {children}
     </AuthContext.Provider>
   );

@@ -38,7 +38,7 @@ export function Navbar() {
             )}
           </Nav>
           <Nav>
-            <Nav.Item className="align-self-center me-3">{usuario.name}</Nav.Item>
+            <Nav.Link as={Link} to="/perfil">{usuario.name}</Nav.Link>
             <Nav.Link onClick={sair}>Sair</Nav.Link>
           </Nav>
         </BsNavbar.Collapse>
