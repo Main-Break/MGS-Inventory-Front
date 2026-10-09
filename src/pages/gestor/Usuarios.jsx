@@ -16,8 +16,10 @@ export function Usuarios() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
+  // Modal de cadastro/edição: editandoId null = usuário novo.
   const [modalAberto, setModalAberto] = useState(false);
-  const [novoUsuario, setNovoUsuario] = useState(USUARIO_VAZIO);
+  const [editandoId, setEditandoId] = useState(null);
+  const [form, setForm] = useState(USUARIO_VAZIO);
   const [erroForm, setErroForm] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -37,23 +39,38 @@ export function Usuarios() {
 
   useEffect(carregarUsuarios, []);
 
-  function abrirModal() {
-    setNovoUsuario(USUARIO_VAZIO);
+  function abrirNovo() {
+    setEditandoId(null);
+    setForm(USUARIO_VAZIO);
     setErroForm(null);
     setModalAberto(true);
   }
 
-  async function cadastrar(evento) {
+  function abrirEdicao(usuario) {
+    setEditandoId(usuario.id);
+    setForm({ name: usuario.name, email: usuario.email, password: "", role: usuario.role });
+    setErroForm(null);
+    setModalAberto(true);
+  }
+
+  async function salvar(evento) {
     evento.preventDefault();
     setErroForm(null);
     setSalvando(true);
     try {
-      await api.post("/users", novoUsuario);
+      if (editandoId) {
+        // Rota a implementar na API: PUT /users/{id}. Senha vazia = não muda.
+        const atualizado = await api.put(`/users/${editandoId}`, { ...form, password: form.password || null });
+        setUsuarios((lista) => lista.map((u) => (u.id === atualizado.id ? atualizado : u)));
+        notificar(`Dados de ${form.name} atualizados.`);
+      } else {
+        await api.post("/users", form);
+        notificar(`${form.name} cadastrado como ${nomePapel(form.role).toLowerCase()}.`);
+        carregarUsuarios();
+      }
       setModalAberto(false);
-      notificar(`${novoUsuario.name} cadastrado como ${nomePapel(novoUsuario.role).toLowerCase()}.`);
-      carregarUsuarios();
     } catch (e) {
-      setErroForm(e instanceof ApiError ? e.message : "Não foi possível cadastrar o usuário.");
+      setErroForm(e instanceof ApiError ? e.message : "Não foi possível salvar o usuário.");
     } finally {
       setSalvando(false);
     }
@@ -73,7 +90,7 @@ export function Usuarios() {
     }
   }
 
-  const alterarCampo = (campo) => (e) => setNovoUsuario({ ...novoUsuario, [campo]: e.target.value });
+  const alterarCampo = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
   const termo = busca.trim().toLowerCase();
   const listaFiltrada = usuarios.filter(
@@ -83,7 +100,7 @@ export function Usuarios() {
   return (
     <>
       <CabecalhoPagina titulo="Usuários" subtitulo="Quem pode entrar no sistema e o que cada um pode fazer.">
-        <Button onClick={abrirModal}>
+        <Button onClick={abrirNovo}>
           <i className="bi bi-person-plus me-2" />
           Novo usuário
         </Button>
@@ -154,7 +171,10 @@ export function Usuarios() {
                   <td>
                     <Badge bg={u.active ? "success" : "secondary"}>{u.active ? "Ativo" : "Inativo"}</Badge>
                   </td>
-                  <td className="text-end pe-3">
+                  <td className="text-end pe-3 text-nowrap">
+                    <Button size="sm" variant="outline-primary" className="me-1" onClick={() => abrirEdicao(u)} title="Editar usuário">
+                      <i className="bi bi-pencil" /> <span className="d-none d-md-inline">Editar</span>
+                    </Button>
                     {u.active ? (
                       <Button
                         size="sm"
@@ -196,18 +216,18 @@ export function Usuarios() {
       </ModalConfirmacao>
 
       <Modal show={modalAberto} onHide={() => setModalAberto(false)} centered>
-        <Form onSubmit={cadastrar}>
+        <Form onSubmit={salvar}>
           <Modal.Header closeButton>
             <Modal.Title as="h5">
-              <i className="bi bi-person-plus me-2 text-info" />
-              Novo usuário
+              <i className={`bi ${editandoId ? "bi-person-gear" : "bi-person-plus"} me-2 text-info`} />
+              {editandoId ? "Editar usuário" : "Novo usuário"}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {erroForm && <Alert variant="danger">{erroForm}</Alert>}
 
             <FloatingLabel controlId="usuario-nome" label="Nome completo" className="mb-3">
-              <Form.Control placeholder="Nome" value={novoUsuario.name} onChange={alterarCampo("name")} autoFocus required />
+              <Form.Control placeholder="Nome" value={form.name} onChange={alterarCampo("name")} autoFocus required />
             </FloatingLabel>
 
             <FloatingLabel controlId="usuario-email" label="E-mail" className="mb-3">
@@ -215,7 +235,7 @@ export function Usuarios() {
                 type="email"
                 placeholder="nome@empresa.com"
                 autoComplete="off"
-                value={novoUsuario.email}
+                value={form.email}
                 onChange={alterarCampo("email")}
                 required
               />
@@ -223,22 +243,30 @@ export function Usuarios() {
 
             <Row className="g-3">
               <Col sm={7}>
-                <FloatingLabel controlId="usuario-senha" label="Senha inicial">
+                <FloatingLabel controlId="usuario-senha" label={editandoId ? "Nova senha" : "Senha inicial"}>
                   <Form.Control
                     type="password"
                     placeholder="Senha"
                     autoComplete="new-password"
                     minLength={8}
-                    value={novoUsuario.password}
+                    value={form.password}
                     onChange={alterarCampo("password")}
-                    required
+                    required={!editandoId}
                   />
                 </FloatingLabel>
-                <Form.Text>Mínimo de 8 caracteres.</Form.Text>
+                <Form.Text>
+                  {editandoId ? "Deixe em branco para manter a atual." : "Mínimo de 8 caracteres."}
+                </Form.Text>
               </Col>
               <Col sm={5}>
+                {/* Tirar o próprio papel de gestor deixaria a conta sem acesso a esta tela. */}
                 <FloatingLabel controlId="usuario-papel" label="Papel">
-                  <Form.Select value={novoUsuario.role} onChange={alterarCampo("role")}>
+                  <Form.Select
+                    value={form.role}
+                    onChange={alterarCampo("role")}
+                    disabled={editandoId === eu.id}
+                    title={editandoId === eu.id ? "Você não pode mudar o próprio papel" : undefined}
+                  >
                     <option value="funcionario">Funcionário</option>
                     <option value="gestor">Gestor</option>
                   </Form.Select>
@@ -258,7 +286,7 @@ export function Usuarios() {
             <Button variant="outline-secondary" onClick={() => setModalAberto(false)} disabled={salvando}>
               Cancelar
             </Button>
-            <BotaoSalvar salvando={salvando}>Cadastrar usuário</BotaoSalvar>
+            <BotaoSalvar salvando={salvando}>{editandoId ? "Salvar alterações" : "Cadastrar usuário"}</BotaoSalvar>
           </Modal.Footer>
         </Form>
       </Modal>

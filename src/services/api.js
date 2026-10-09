@@ -49,8 +49,18 @@ async function requisitar(caminho, { method = "GET", body, semToken = false } = 
 
   const dados = await resposta.json().catch(() => null);
 
+  // Rota que o front já usa mas a API ainda não implementou: o FastAPI
+  // responde 405 (caminho existe com outro método) ou 404 "Not Found" puro.
+  if (resposta.status === 405 || (resposta.status === 404 && dados?.detail === "Not Found")) {
+    throw new ApiError(resposta.status, `Essa função ainda não está disponível na API (${method} ${caminho}).`);
+  }
+
   if (!resposta.ok) {
-    throw new ApiError(resposta.status, dados?.detail ?? "Erro na requisição");
+    // Erro de validação (422) vem como lista de campos, não como texto.
+    const detalhe = Array.isArray(dados?.detail)
+      ? dados.detail.map((d) => d.msg).join(" ")
+      : dados?.detail;
+    throw new ApiError(resposta.status, detalhe ?? "Erro na requisição");
   }
 
   return dados;
@@ -61,4 +71,5 @@ export const api = {
   post: (caminho, body, opcoes) => requisitar(caminho, { method: "POST", body, ...opcoes }),
   put: (caminho, body) => requisitar(caminho, { method: "PUT", body }),
   patch: (caminho, body) => requisitar(caminho, { method: "PATCH", body }),
+  delete: (caminho) => requisitar(caminho, { method: "DELETE" }),
 };

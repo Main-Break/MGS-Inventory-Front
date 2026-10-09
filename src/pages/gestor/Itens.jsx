@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Button, Card, FloatingLabel, Form, Modal, Table } from "react-bootstrap";
 import { api, ApiError } from "../../services/api";
 import { useNotificacao } from "../../context/NotificacaoContext";
-import { BotaoSalvar, CabecalhoPagina, Carregando, EstadoVazio } from "../../components/ui";
+import { BotaoSalvar, CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
 
 const ITEM_VAZIO = { label: "", name: "", stock_quantity: 0 };
 
@@ -13,10 +13,15 @@ export function Itens() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
+  // Modal de cadastro/edição: editandoId null = item novo.
   const [modalAberto, setModalAberto] = useState(false);
-  const [novoItem, setNovoItem] = useState(ITEM_VAZIO);
+  const [editandoId, setEditandoId] = useState(null);
+  const [form, setForm] = useState(ITEM_VAZIO);
   const [erroForm, setErroForm] = useState(null);
   const [salvando, setSalvando] = useState(false);
+
+  const [paraExcluir, setParaExcluir] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   function carregarItens(q) {
     setCarregando(true);
@@ -36,29 +41,59 @@ export function Itens() {
     return () => clearTimeout(espera);
   }, [busca]);
 
-  function abrirModal() {
-    setNovoItem(ITEM_VAZIO);
+  function abrirNovo() {
+    setEditandoId(null);
+    setForm(ITEM_VAZIO);
     setErroForm(null);
     setModalAberto(true);
   }
 
-  async function cadastrar(evento) {
+  function abrirEdicao(item) {
+    setEditandoId(item.id);
+    setForm({ label: item.label, name: item.name, stock_quantity: item.stock_quantity });
+    setErroForm(null);
+    setModalAberto(true);
+  }
+
+  async function salvar(evento) {
     evento.preventDefault();
     setErroForm(null);
     setSalvando(true);
+    const corpo = { ...form, stock_quantity: Number(form.stock_quantity) };
     try {
-      await api.post("/items", { ...novoItem, stock_quantity: Number(novoItem.stock_quantity) });
+      if (editandoId) {
+        // Rota a implementar na API: PUT /items/{id}
+        await api.put(`/items/${editandoId}`, corpo);
+        notificar(`Item "${form.name}" atualizado.`);
+      } else {
+        await api.post("/items", corpo);
+        notificar(`Item "${form.name}" cadastrado.`);
+      }
       setModalAberto(false);
-      notificar(`Item "${novoItem.name}" cadastrado.`);
       carregarItens(busca.trim());
     } catch (e) {
-      setErroForm(e instanceof ApiError ? e.message : "Não foi possível cadastrar o item.");
+      setErroForm(e instanceof ApiError ? e.message : "Não foi possível salvar o item.");
     } finally {
       setSalvando(false);
     }
   }
 
-  const alterarCampo = (campo) => (e) => setNovoItem({ ...novoItem, [campo]: e.target.value });
+  async function excluir() {
+    setExcluindo(true);
+    try {
+      // Rota a implementar na API: DELETE /items/{id}
+      await api.delete(`/items/${paraExcluir.id}`);
+      setItens((lista) => lista.filter((i) => i.id !== paraExcluir.id));
+      notificar(`Item "${paraExcluir.name}" excluído.`);
+      setParaExcluir(null);
+    } catch (e) {
+      notificar(e.message, "erro");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+  const alterarCampo = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
   return (
     <>
@@ -66,7 +101,7 @@ export function Itens() {
         titulo="Itens do catálogo"
         subtitulo="Peças que a IA sabe reconhecer nas fotos e o estoque atual de cada uma."
       >
-        <Button onClick={abrirModal}>
+        <Button onClick={abrirNovo}>
           <i className="bi bi-plus-lg me-2" />
           Novo item
         </Button>
@@ -100,7 +135,7 @@ export function Itens() {
             {busca ? (
               "Confira a busca ou cadastre um item novo."
             ) : (
-              <Button size="sm" variant="outline-primary" className="mt-2" onClick={abrirModal}>
+              <Button size="sm" variant="outline-primary" className="mt-2" onClick={abrirNovo}>
                 <i className="bi bi-plus-lg me-1" /> Cadastrar o primeiro item
               </Button>
             )}
@@ -111,7 +146,8 @@ export function Itens() {
               <tr>
                 <th className="ps-3">Nome</th>
                 <th>Label (classe da IA)</th>
-                <th className="text-end pe-3">Estoque atual</th>
+                <th className="text-end">Estoque atual</th>
+                <th className="text-end pe-3">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -119,8 +155,14 @@ export function Itens() {
                 <tr key={item.id}>
                   <td className="ps-3 fw-medium">{item.name}</td>
                   <td><code className="small">{item.label}</code></td>
-                  <td className="text-end pe-3 fw-semibold numero">
-                    {item.stock_quantity.toLocaleString("pt-BR")}
+                  <td className="text-end fw-semibold numero">{item.stock_quantity.toLocaleString("pt-BR")}</td>
+                  <td className="text-end pe-3 text-nowrap">
+                    <Button size="sm" variant="outline-primary" className="me-1" onClick={() => abrirEdicao(item)} title="Editar item">
+                      <i className="bi bi-pencil" /> <span className="d-none d-md-inline">Editar</span>
+                    </Button>
+                    <Button size="sm" variant="outline-danger" onClick={() => setParaExcluir(item)} title="Excluir item">
+                      <i className="bi bi-trash" />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -129,31 +171,42 @@ export function Itens() {
         )}
       </Card>
 
+      <ModalConfirmacao
+        show={paraExcluir !== null}
+        titulo="Excluir item"
+        textoConfirmar="Excluir"
+        variante="danger"
+        processando={excluindo}
+        onConfirmar={excluir}
+        onCancelar={() => setParaExcluir(null)}
+      >
+        <p className="mb-2">
+          Excluir <strong>{paraExcluir?.name}</strong> do catálogo?
+        </p>
+        <p className="text-secondary small mb-0">
+          A IA continua reconhecendo a peça, mas as próximas contagens não vão mais ficar ligadas a esse item.
+        </p>
+      </ModalConfirmacao>
+
       <Modal show={modalAberto} onHide={() => setModalAberto(false)} centered>
-        <Form onSubmit={cadastrar}>
+        <Form onSubmit={salvar}>
           <Modal.Header closeButton>
             <Modal.Title as="h5">
-              <i className="bi bi-box-seam me-2 text-warning" />
-              Novo item
+              <i className={`bi ${editandoId ? "bi-pencil-square" : "bi-box-seam"} me-2 text-warning`} />
+              {editandoId ? "Editar item" : "Novo item"}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {erroForm && <Alert variant="danger">{erroForm}</Alert>}
 
             <FloatingLabel controlId="item-nome" label="Nome" className="mb-3">
-              <Form.Control
-                placeholder="Parafuso 10mm"
-                value={novoItem.name}
-                onChange={alterarCampo("name")}
-                autoFocus
-                required
-              />
+              <Form.Control placeholder="Parafuso 10mm" value={form.name} onChange={alterarCampo("name")} autoFocus required />
             </FloatingLabel>
 
             <FloatingLabel controlId="item-label" label="Label (classe da IA)">
               <Form.Control
                 placeholder="parafuso_10mm"
-                value={novoItem.label}
+                value={form.label}
                 onChange={alterarCampo("label")}
                 className="font-monospace"
                 required
@@ -167,12 +220,12 @@ export function Itens() {
               </span>
             </Form.Text>
 
-            <FloatingLabel controlId="item-estoque" label="Estoque inicial">
+            <FloatingLabel controlId="item-estoque" label={editandoId ? "Estoque atual" : "Estoque inicial"}>
               <Form.Control
                 type="number"
                 min={0}
                 placeholder="0"
-                value={novoItem.stock_quantity}
+                value={form.stock_quantity}
                 onChange={alterarCampo("stock_quantity")}
                 required
               />
@@ -182,7 +235,7 @@ export function Itens() {
             <Button variant="outline-secondary" onClick={() => setModalAberto(false)} disabled={salvando}>
               Cancelar
             </Button>
-            <BotaoSalvar salvando={salvando}>Cadastrar item</BotaoSalvar>
+            <BotaoSalvar salvando={salvando}>{editandoId ? "Salvar alterações" : "Cadastrar item"}</BotaoSalvar>
           </Modal.Footer>
         </Form>
       </Modal>

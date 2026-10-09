@@ -84,10 +84,13 @@ src/
 
 ## Pendências conhecidas
 
-- A API ainda não tem rota pra um gestor editar nome/e-mail/senha de
-  outro usuário (só dá pra ativar/desativar). Quando essa rota existir
-  (`PUT /users/{id}`), a tela de Usuários precisa ganhar o formulário de
-  edição.
+- As telas de Itens e Usuários já têm editar/excluir, mas a API ainda não
+  tem as rotas. Enquanto não existirem, o front avisa "Essa função ainda
+  não está disponível na API". Rotas esperadas:
+  - `PUT /items/{id}` com `{ name, label, stock_quantity }`, devolve o item
+  - `DELETE /items/{id}`
+  - `PUT /users/{id}` com `{ name, email, role, password }` (`password`
+    `null` = não muda), devolve o usuário
 - Telas de `Itens` e `Verificações` do gestor, e `Minhas verificações`
   do funcionário, ainda são só esqueleto, falta ligar com a API de
   verdade (seguir o mesmo padrão de `Usuarios.jsx` ou `EnviarFoto.jsx`).
