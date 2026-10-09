@@ -1,7 +1,7 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NotificacaoProvider } from "./context/NotificacaoContext";
-import { RotaProtegida } from "./components/RotaProtegida";
+import { RotaProtegida, SemPermissao } from "./components/RotaProtegida";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Perfil } from "./pages/Perfil";
@@ -11,13 +11,20 @@ import { Verificacoes } from "./pages/gestor/Verificacoes";
 import { EnviarFoto } from "./pages/funcionario/EnviarFoto";
 import { MinhasVerificacoes } from "./pages/funcionario/MinhasVerificacoes";
 
-// "/" não é uma tela própria: só manda cada papel pra sua tela padrão.
+// Tela inicial de quem entra: a primeira que a pessoa tem permissão de usar.
+const TELAS_INICIAIS = [
+  { permissao: "aprovar_verificacoes", rota: "/verificacoes" },
+  { permissao: "enviar_foto", rota: "/enviar-foto" },
+  { permissao: "itens", rota: "/itens" },
+  { permissao: "usuarios", rota: "/usuarios" },
+];
+
 function Inicio() {
-  const { usuario } = useAuth();
+  const { usuario, carregando, pode } = useAuth();
+  if (carregando) return null;
   if (!usuario) return <Navigate to="/login" replace />;
-  return usuario.role === "gestor"
-    ? <Navigate to="/gestor/verificacoes" replace />
-    : <Navigate to="/funcionario/enviar-foto" replace />;
+  const inicial = TELAS_INICIAIS.find((t) => pode(t.permissao));
+  return inicial ? <Navigate to={inicial.rota} replace /> : <SemPermissao />;
 }
 
 function App() {
@@ -27,18 +34,20 @@ function App() {
         <NotificacaoProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Inicio />} />
 
             {/* Telas logadas: topo + menu lateral em volta. */}
             <Route element={<RotaProtegida><Layout /></RotaProtegida>}>
+              <Route path="/" element={<Inicio />} />
               <Route path="/perfil" element={<Perfil />} />
 
-              <Route path="/gestor/usuarios" element={<RotaProtegida papel="gestor"><Usuarios /></RotaProtegida>} />
-              <Route path="/gestor/itens" element={<RotaProtegida papel="gestor"><Itens /></RotaProtegida>} />
-              <Route path="/gestor/verificacoes" element={<RotaProtegida papel="gestor"><Verificacoes /></RotaProtegida>} />
+              <Route path="/verificacoes" element={<RotaProtegida permissao="aprovar_verificacoes"><Verificacoes /></RotaProtegida>} />
+              <Route path="/itens" element={<RotaProtegida permissao="itens"><Itens /></RotaProtegida>} />
+              <Route path="/usuarios" element={<RotaProtegida permissao="usuarios"><Usuarios /></RotaProtegida>} />
 
-              <Route path="/funcionario/enviar-foto" element={<RotaProtegida papel="funcionario"><EnviarFoto /></RotaProtegida>} />
-              <Route path="/funcionario/minhas-verificacoes" element={<RotaProtegida papel="funcionario"><MinhasVerificacoes /></RotaProtegida>} />
+              <Route path="/enviar-foto" element={<RotaProtegida permissao="enviar_foto"><EnviarFoto /></RotaProtegida>} />
+              <Route path="/minhas-verificacoes" element={<RotaProtegida permissao="enviar_foto"><MinhasVerificacoes /></RotaProtegida>} />
+
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
         </NotificacaoProvider>

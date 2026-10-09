@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../services/api";
+import { temPermissao } from "../utils/permissoes";
 
 const AuthContext = createContext(null);
 
@@ -52,8 +53,11 @@ export function AuthProvider({ children }) {
     setUsuario(dados);
   }
 
+  // Atalho pras telas: pode("itens") -> true/false.
+  const pode = (chave) => temPermissao(usuario, chave);
+
   return (
-    <AuthContext.Provider value={{ usuario, carregando, login, logout, atualizarUsuario }}>
+    <AuthContext.Provider value={{ usuario, carregando, login, logout, atualizarUsuario, pode }}>
       {children}
     </AuthContext.Provider>
   );

@@ -20,6 +20,10 @@ porta diferente de 5173 (o Vite troca de porta sozinho se a 5173 estiver
 ocupada), precisa ajustar o `FRONTEND_ORIGIN` no `.env` da API também,
 senão o navegador bloqueia as requisições por CORS.
 
+Alternativa sem depender do CORS da API: `VITE_API_URL=/api` no `.env`.
+O Vite repassa `/api/...` pra `http://localhost:8000/...` (ver
+`vite.config.js`), então pro navegador é tudo a mesma origem.
+
 ## Build pra produção
 
 ```bash
@@ -35,12 +39,49 @@ pela tela de Usuários.
 
 ## Telas
 
-- `/login` - entrada, e-mail + senha
-- `/gestor/usuarios` - lista, cadastra e ativa/desativa usuários
-- `/gestor/itens` - cadastro e busca do catálogo
-- `/gestor/verificacoes` - vê e aprova as contagens enviadas
-- `/funcionario/enviar-foto` - tira ou escolhe uma foto, manda pra API contar
-- `/funcionario/minhas-verificacoes` - histórico de envios do próprio funcionário
+| Rota | Permissão | O que faz |
+|---|---|---|
+| `/login` | - | entrada, e-mail + senha |
+| `/perfil` | (logado) | edita os próprios dados e senha |
+| `/verificacoes` | `aprovar_verificacoes` | vê e aprova/rejeita as contagens de todos |
+| `/itens` | `itens` | cadastra, edita, exclui e busca itens do catálogo |
+| `/usuarios` | `usuarios` | cadastra, edita, ativa/desativa e libera permissões |
+| `/enviar-foto` | `enviar_foto` | tira ou escolhe uma foto, manda pra API contar |
+| `/minhas-verificacoes` | `enviar_foto` | histórico de envios do próprio usuário |
+
+`/` manda cada um pra primeira tela que ele tem permissão de usar.
+
+## Permissões
+
+Mesmo modelo do OS-Mechanical: o papel traz um conjunto fixo de
+permissões, e o gestor pode liberar permissões extras pra um usuário
+específico (tela de Usuários > Editar > Permissões). Catálogo e padrão
+de cada papel ficam em `src/utils/permissoes.js`:
+
+| Permissão | Gestor | Funcionário |
+|---|---|---|
+| `enviar_foto` | | ✓ |
+| `aprovar_verificacoes` | ✓ | |
+| `itens` | ✓ | |
+| `usuarios` | ✓ | |
+
+O front só esconde menu/tela de quem não tem a permissão: **quem
+garante de verdade é a API**, conferindo a permissão em cada rota e
+devolvendo `403`. Contrato esperado da API:
+
+- `GET /users/me` e `GET /users` devolvem, em cada usuário,
+  `extra_permissions: string[]` (o que foi liberado além do papel). Se
+  também devolverem `permissions: string[]` (efetivas = papel + extras),
+  o front usa essa lista direto em vez de calcular.
+- `POST /users` e `PUT /users/{id}` aceitam `extra_permissions` no corpo.
+- Mapeamento rota da API -> permissão:
+  - `POST /verifications`, e `GET /verifications` das próprias: `enviar_foto`
+  - `GET /verifications` de todos, `PATCH /verifications/{id}/approve`: `aprovar_verificacoes`
+  - `POST/PUT/DELETE /items`: `itens` (`GET /items` só exige login, a tela de enviar foto usa)
+  - `GET/POST /users`, `PUT /users/{id}`, `PATCH /users/{id}/active`: `usuarios`
+
+Enquanto a API não devolver nada disso, o front calcula pelo papel e tudo
+continua funcionando como antes.
 
 Tirar foto pelo celular funciona abrindo o site no navegador do celular
 (mesma rede, usando o IP da máquina em vez de `localhost`): o campo de
@@ -67,19 +108,26 @@ foto já abre a câmera direto, não precisa de app.
 
 ```
 src/
-  main.jsx              # entrada, importa o CSS do Bootstrap
-  App.jsx                # rotas
+  main.jsx                  # entrada, CSS do Bootstrap/ícones, aplica o tema
+  App.jsx                   # rotas, cada uma com a permissão exigida
+  index.css                 # estilos (só variáveis do Bootstrap, funciona nos 2 temas)
   context/
-    AuthContext.jsx      # login, logout, usuário logado
+    AuthContext.jsx         # login, logout, usuário logado, pode(permissão)
+    NotificacaoContext.jsx  # toasts de sucesso/erro
   components/
-    Navbar.jsx
-    RotaProtegida.jsx    # bloqueia tela por token/papel
+    Layout.jsx              # topo + menu lateral, filtrado por permissão
+    RotaProtegida.jsx       # bloqueia tela por login/permissão
+    ui.jsx                  # cabeçalho, cards, modal de confirmação etc.
   services/
-    api.js                # fetch com token, base URL e tratamento de erro
+    api.js                  # fetch com token, base URL e tratamento de erro
+  utils/
+    permissoes.js           # catálogo de permissões e padrão de cada papel
+    tema.js                 # tema claro/escuro
+    formatacao.js
   pages/
-    Login.jsx
-    gestor/               # telas exclusivas de gestor
-    funcionario/           # telas exclusivas de funcionário
+    Login.jsx, Perfil.jsx
+    gestor/                 # telas que por padrão são do gestor
+    funcionario/            # telas que por padrão são do funcionário
 ```
 
 ## Pendências conhecidas
@@ -89,8 +137,6 @@ src/
   não está disponível na API". Rotas esperadas:
   - `PUT /items/{id}` com `{ name, label, stock_quantity }`, devolve o item
   - `DELETE /items/{id}`
-  - `PUT /users/{id}` com `{ name, email, role, password }` (`password`
-    `null` = não muda), devolve o usuário
-- Telas de `Itens` e `Verificações` do gestor, e `Minhas verificações`
-  do funcionário, ainda são só esqueleto, falta ligar com a API de
-  verdade (seguir o mesmo padrão de `Usuarios.jsx` ou `EnviarFoto.jsx`).
+  - `PUT /users/{id}` com `{ name, email, role, password, extra_permissions }`
+    (`password` `null` = não muda), devolve o usuário
+- Permissões: ver o contrato na seção [Permissões](#permissões).

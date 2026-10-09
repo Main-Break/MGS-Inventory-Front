@@ -33,7 +33,9 @@ export function Verificacoes() {
   function carregarTudo() {
     setCarregando(true);
     setErro(null);
-    Promise.all([api.get("/verifications"), api.get("/users"), api.get("/items")])
+    // /users exige a permissão "usuarios": quem só revisa verificações não
+    // tem, então sem a lista a tela segue mostrando "Usuário #id".
+    Promise.all([api.get("/verifications"), api.get("/users").catch(() => []), api.get("/items")])
       .then(([verificationsData, usersData, itemsData]) => {
         setVerificacoes(verificationsData);
         setUsuariosPorId(Object.fromEntries(usersData.map((u) => [u.id, u.name])));

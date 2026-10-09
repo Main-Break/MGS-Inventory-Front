@@ -175,7 +175,7 @@ export function EnviarFoto() {
                 <i className="bi bi-camera me-2" />
                 Enviar outra foto
               </Button>
-              <Button as={Link} to="/funcionario/minhas-verificacoes" variant="outline-secondary">
+              <Button as={Link} to="/minhas-verificacoes" variant="outline-secondary">
                 Ver minhas verificações
               </Button>
             </div>

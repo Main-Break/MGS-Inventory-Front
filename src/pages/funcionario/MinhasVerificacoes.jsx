@@ -34,7 +34,7 @@ export function MinhasVerificacoes() {
   return (
     <div className="mx-auto" style={{ maxWidth: "860px" }}>
       <CabecalhoPagina titulo="Minhas verificações" subtitulo="As fotos que você enviou e o que o gestor decidiu.">
-        <Button as={Link} to="/funcionario/enviar-foto">
+        <Button as={Link} to="/enviar-foto">
           <i className="bi bi-camera me-2" />
           Nova foto
         </Button>
@@ -68,7 +68,7 @@ export function MinhasVerificacoes() {
             titulo={verificacoes.length === 0 ? "Você ainda não enviou nenhuma foto" : "Nada com esse filtro"}
           >
             {verificacoes.length === 0 && (
-              <Button as={Link} to="/funcionario/enviar-foto" size="sm" variant="outline-primary" className="mt-2">
+              <Button as={Link} to="/enviar-foto" size="sm" variant="outline-primary" className="mt-2">
                 Enviar a primeira foto
               </Button>
             )}

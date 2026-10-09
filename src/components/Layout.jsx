@@ -6,31 +6,23 @@ import { aplicarTema, lerTema } from "../utils/tema";
 import { inicial, nomePapel } from "../utils/formatacao";
 import logo from "../assets/logo-mgs.png";
 
-// Menu por papel. Cada seção ganha um rótulo, como no menu do Simple ERP.
-const MENU = {
-  gestor: [
-    {
-      secao: "Operação",
-      itens: [
-        { para: "/gestor/verificacoes", rotulo: "Verificações", icone: "bi-clipboard-check", cor: "primary" },
-        { para: "/gestor/itens", rotulo: "Itens do catálogo", icone: "bi-box-seam", cor: "warning" },
-      ],
-    },
-    {
-      secao: "Administração",
-      itens: [{ para: "/gestor/usuarios", rotulo: "Usuários", icone: "bi-people", cor: "info" }],
-    },
-  ],
-  funcionario: [
-    {
-      secao: "Operação",
-      itens: [
-        { para: "/funcionario/enviar-foto", rotulo: "Enviar foto", icone: "bi-camera", cor: "primary" },
-        { para: "/funcionario/minhas-verificacoes", rotulo: "Minhas verificações", icone: "bi-clock-history", cor: "success" },
-      ],
-    },
-  ],
-};
+// Cada item só aparece pra quem tem a permissão dele; seção que fica vazia
+// some junto. Rótulo por seção, como no menu do Simple ERP.
+const MENU = [
+  {
+    secao: "Operação",
+    itens: [
+      { para: "/enviar-foto", rotulo: "Enviar foto", icone: "bi-camera", cor: "primary", permissao: "enviar_foto" },
+      { para: "/minhas-verificacoes", rotulo: "Minhas verificações", icone: "bi-clock-history", cor: "success", permissao: "enviar_foto" },
+      { para: "/verificacoes", rotulo: "Verificações", icone: "bi-clipboard-check", cor: "primary", permissao: "aprovar_verificacoes" },
+      { para: "/itens", rotulo: "Itens do catálogo", icone: "bi-box-seam", cor: "warning", permissao: "itens" },
+    ],
+  },
+  {
+    secao: "Administração",
+    itens: [{ para: "/usuarios", rotulo: "Usuários", icone: "bi-people", cor: "info", permissao: "usuarios" }],
+  },
+];
 
 function BotaoTema() {
   const [tema, setTema] = useState(lerTema);
@@ -55,10 +47,15 @@ function BotaoTema() {
 }
 
 export function Layout() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, pode } = useAuth();
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
   const fecharMenu = () => setMenuAberto(false);
+
+  const menuPermitido = MENU.map((grupo) => ({
+    ...grupo,
+    itens: grupo.itens.filter((item) => pode(item.permissao)),
+  })).filter((grupo) => grupo.itens.length > 0);
 
   function sair() {
     logout();
@@ -121,7 +118,7 @@ export function Layout() {
             </Link>
 
             <nav className="flex-grow-1">
-              {MENU[usuario.role]?.map((grupo) => (
+              {menuPermitido.map((grupo) => (
                 <div key={grupo.secao}>
                   <div className="nav-section-label">{grupo.secao}</div>
                   {grupo.itens.map((item) => (

@@ -4,9 +4,11 @@ import { api, ApiError } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificacao } from "../../context/NotificacaoContext";
 import { inicial, nomePapel } from "../../utils/formatacao";
+import { PERMISSOES, PERMISSOES_DO_PAPEL } from "../../utils/permissoes";
 import { BotaoSalvar, CabecalhoPagina, Carregando, EstadoVazio, ModalConfirmacao } from "../../components/ui";
 
-const USUARIO_VAZIO = { name: "", email: "", password: "", role: "funcionario" };
+// extra_permissions: o que foi liberado além do que o papel já dá.
+const USUARIO_VAZIO = { name: "", email: "", password: "", role: "funcionario", extra_permissions: [] };
 
 export function Usuarios() {
   const { usuario: eu } = useAuth();
@@ -48,7 +50,13 @@ export function Usuarios() {
 
   function abrirEdicao(usuario) {
     setEditandoId(usuario.id);
-    setForm({ name: usuario.name, email: usuario.email, password: "", role: usuario.role });
+    setForm({
+      name: usuario.name,
+      email: usuario.email,
+      password: "",
+      role: usuario.role,
+      extra_permissions: usuario.extra_permissions ?? [],
+    });
     setErroForm(null);
     setModalAberto(true);
   }
@@ -57,14 +65,17 @@ export function Usuarios() {
     evento.preventDefault();
     setErroForm(null);
     setSalvando(true);
+    // Extra que o papel já cobre não precisa ir (ex: virou gestor).
+    const doPapel = PERMISSOES_DO_PAPEL[form.role] ?? [];
+    const corpo = { ...form, extra_permissions: form.extra_permissions.filter((p) => !doPapel.includes(p)) };
     try {
       if (editandoId) {
         // Rota a implementar na API: PUT /users/{id}. Senha vazia = não muda.
-        const atualizado = await api.put(`/users/${editandoId}`, { ...form, password: form.password || null });
+        const atualizado = await api.put(`/users/${editandoId}`, { ...corpo, password: corpo.password || null });
         setUsuarios((lista) => lista.map((u) => (u.id === atualizado.id ? atualizado : u)));
         notificar(`Dados de ${form.name} atualizados.`);
       } else {
-        await api.post("/users", form);
+        await api.post("/users", corpo);
         notificar(`${form.name} cadastrado como ${nomePapel(form.role).toLowerCase()}.`);
         carregarUsuarios();
       }
@@ -91,6 +102,15 @@ export function Usuarios() {
   }
 
   const alterarCampo = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
+
+  function alternarPermissao(chave) {
+    const extras = form.extra_permissions.includes(chave)
+      ? form.extra_permissions.filter((p) => p !== chave)
+      : [...form.extra_permissions, chave];
+    setForm({ ...form, extra_permissions: extras });
+  }
+
+  const permissoesDoPapelNoForm = PERMISSOES_DO_PAPEL[form.role] ?? [];
 
   const termo = busca.trim().toLowerCase();
   const listaFiltrada = usuarios.filter(
@@ -167,6 +187,17 @@ export function Usuarios() {
                     >
                       {nomePapel(u.role)}
                     </Badge>
+                    {u.extra_permissions?.length > 0 && (
+                      <Badge
+                        pill
+                        bg="info-subtle"
+                        text="info-emphasis"
+                        className="fw-medium ms-1"
+                        title={u.extra_permissions.map((p) => PERMISSOES[p]?.rotulo ?? p).join(", ")}
+                      >
+                        +{u.extra_permissions.length} {u.extra_permissions.length === 1 ? "permissão" : "permissões"}
+                      </Badge>
+                    )}
                   </td>
                   <td>
                     <Badge bg={u.active ? "success" : "secondary"}>{u.active ? "Ativo" : "Inativo"}</Badge>
@@ -274,13 +305,43 @@ export function Usuarios() {
               </Col>
             </Row>
 
-            <Alert variant="secondary" className="small mt-3 mb-0 d-flex gap-2">
-              <i className="bi bi-info-circle" />
-              <span>
-                <strong>Funcionário</strong> envia fotos e acompanha as próprias contagens.{" "}
-                <strong>Gestor</strong> aprova contagens e gerencia itens e usuários.
-              </span>
-            </Alert>
+            <h6 className="secao-titulo mt-4 mb-2">Permissões</h6>
+            <p className="text-secondary small mb-2">
+              O papel já libera as permissões marcadas como <em>do papel</em>. As outras podem ser liberadas só para este usuário.
+            </p>
+            <div className="border rounded-3">
+              {Object.entries(PERMISSOES).map(([chave, p], indice) => {
+                const doPapel = permissoesDoPapelNoForm.includes(chave);
+                const proprio = editandoId === eu.id;
+                return (
+                  <div key={chave} className={`d-flex align-items-start gap-3 px-3 py-2 ${indice > 0 ? "border-top" : ""}`}>
+                    <Form.Check
+                      type="switch"
+                      id={`permissao-${chave}`}
+                      className="mt-1"
+                      checked={doPapel || form.extra_permissions.includes(chave)}
+                      disabled={doPapel || proprio}
+                      onChange={() => alternarPermissao(chave)}
+                      aria-label={p.rotulo}
+                    />
+                    <label htmlFor={`permissao-${chave}`} className="flex-grow-1">
+                      <span className="fw-medium d-block">
+                        {p.rotulo}
+                        {doPapel && (
+                          <Badge pill bg="secondary-subtle" text="secondary-emphasis" className="fw-medium ms-2">
+                            do papel
+                          </Badge>
+                        )}
+                      </span>
+                      <span className="text-secondary small">{p.descricao}</span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            {editandoId === eu.id && (
+              <Form.Text className="d-block mt-2">Você não pode mudar as próprias permissões.</Form.Text>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="outline-secondary" onClick={() => setModalAberto(false)} disabled={salvando}>
